@@ -2,8 +2,9 @@
 pragma solidity ^0.8.0;  
 
 import "./OrderQueue.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
-contract OrderBook{
+contract OrderBook is Ownable{
     using QueueFuns for Queue;
     Queue[100] orders;
 
