@@ -18,12 +18,33 @@ library QueueFuns {
     }
 
     function dequeue(Queue storage self) public returns (Order memory data) {
-        require(self.last >= self.first);  // non-empty queue
-
-        data = self.queue[self.first];
+        data = peek(self);
 
         delete self.queue[self.first];
         self.first += 1;
+    }
+
+    function peek(Queue storage self) public view returns (Order memory data){
+        require(self.last >= self.first, "queue is empty");  
+        data = self.queue[self.first];
+    }
+
+    function drainOrderQueue(Queue storage self, uint amount) 
+    public returns(Order memory drainedOrder){
+
+        Order memory nextOrder = peek(self);
+
+        if(nextOrder.amount <= amount){
+            drainedOrder = dequeue(self);
+        }
+        else{
+            drainedOrder = Order(nextOrder.author, amount);
+            nextOrder.amount -= amount;
+        }
+    }
+
+    function getCount(Queue storage self) public view returns(uint count){
+        return self.last - self.first;
     }
 }
 
