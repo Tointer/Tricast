@@ -45,13 +45,12 @@ library OrderBookFuns{
     }
 
     function mint(OrderBook storage self, address adr, uint amount) internal{
-        console.log("Minting %s synth tokens for %s", amount, adr);
         self.synthBalances[adr] += amount;
     }
 
     function limitBuySynth(OrderBook storage self, uint8 priceForEach, uint amount) internal {
         require(priceForEach > 0 && priceForEach < 100, "invalid price");
-        //who is sender?
+        
         self.balance.removeBalance(msg.sender, amount*priceForEach);
 
         self.orders[priceForEach].enqueue(Order(msg.sender, amount));

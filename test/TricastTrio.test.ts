@@ -11,6 +11,8 @@ describe("TricastTrio", function () {
   let tricastTrio: Contract;
   let wallet0: SignerWithAddress;
   let wallet1: SignerWithAddress;
+  let wallet2: SignerWithAddress;
+  let wallet3: SignerWithAddress;
 
   beforeEach(async function () {
     const Oracle = await ethers.getContractFactory("DummyOutcomeProvider");
@@ -22,48 +24,71 @@ describe("TricastTrio", function () {
     const wallets = await ethers.getSigners();
     wallet0 = wallets[0];
     wallet1 = wallets[1];
+    wallet2 = wallets[2];
+    wallet3 = wallets[3];
 
     (await wallet0.sendTransaction({to: tricastTrio.address, value: 5000})).wait();
     (await wallet1.sendTransaction({to: tricastTrio.address, value: 5000})).wait();
+    (await wallet2.sendTransaction({to: tricastTrio.address, value: 5000})).wait();
+    (await wallet3.sendTransaction({to: tricastTrio.address, value: 5000})).wait();
+
+    await tricastTrio.connect(wallet2).forBuyLimit(10, 50);
+    await tricastTrio.connect(wallet3).againstBuyLimit(10, 50);
 
   });
 
   it("Transfer funds", async () => {
-    const transaction = await wallet0.sendTransaction({to: tricastTrio.address, value: 50000});
-    transaction.wait();
+    (await wallet0.sendTransaction({to: tricastTrio.address, value: 50000})).wait();
+    expect(await tricastTrio.callStatic.getBalance(wallet0.address)).to.equal(55000);
 
-    const balance = await tricastTrio.callStatic.getBalance(wallet0.address);
-    expect(balance).to.equal(55000);
   });
 
   it("Place limit buy order", async () => {
     await tricastTrio.connect(wallet0).forBuyLimit(20, 30);
-    const forOrderCount = await tricastTrio.callStatic.getForOrderCount(30);
-
-    expect(forOrderCount).to.equal(1);
-
+    expect(await tricastTrio.callStatic.getForOrderCount(30)).to.equal(1);
 
     await tricastTrio.connect(wallet1).againstBuyLimit(20, 30);
-    const againstOrderCount = await tricastTrio.callStatic.getAgainstOrderCount(30);
+    expect(await tricastTrio.callStatic.getAgainstOrderCount(30)).to.equal(1);
 
-    expect(againstOrderCount).to.equal(1);
+  });
+
+  it("Place limit sell order", async () => {
+    await tricastTrio.connect(wallet2).forSellLimit(5, 30);
+    expect(await tricastTrio.callStatic.getForOrderCount(30)).to.equal(1);
+
+    await tricastTrio.connect(wallet3).againstSellLimit(5, 30);
+    expect(await tricastTrio.callStatic.getAgainstOrderCount(30)).to.equal(1);
+
   });
 
   it("Mint two matching for/against limit orders at middle price", async () => {
     await tricastTrio.connect(wallet0).forBuyLimit(10, 50);
     await tricastTrio.connect(wallet1).againstBuyLimit(10, 50);
 
-    const forBalance = await tricastTrio.callStatic.getForBalance(wallet0.address);
-    const againstBalance = await tricastTrio.callStatic.getAgainstBalance(wallet0.address);
+    expect(await tricastTrio.callStatic.getAgainstBalance(wallet0.address)).to.equal(0);
+    expect(await tricastTrio.callStatic.getForBalance(wallet1.address)).to.equal(0);
 
-    const forBalance1 = await tricastTrio.callStatic.getForBalance(wallet1.address);
-    const againstBalance1 = await tricastTrio.callStatic.getAgainstBalance(wallet1.address);
+    expect(await tricastTrio.callStatic.getForBalance(wallet0.address)).to.equal(10);
+    expect(await tricastTrio.callStatic.getAgainstBalance(wallet1.address)).to.equal(10);
+  });
 
-    expect(againstBalance).to.equal(0);
-    expect(forBalance1).to.equal(0);
+  it("Mint two matching for/against limit orders at mirror price", async () => {
+    const balance0 = await tricastTrio.callStatic.getBalance(wallet0.address);
+    const balance1 = await tricastTrio.callStatic.getBalance(wallet1.address);
+    expect(balance0).to.equal(5000);
+    expect(balance1).to.equal(5000);
 
-    expect(forBalance).to.equal(10);
-    expect(againstBalance1).to.equal(10);
+    await tricastTrio.connect(wallet0).forBuyLimit(10, 30);
+    await tricastTrio.connect(wallet1).againstBuyLimit(10, 70);
+
+    expect(await tricastTrio.callStatic.getAgainstBalance(wallet0.address)).to.equal(0);
+    expect(await tricastTrio.callStatic.getForBalance(wallet1.address)).to.equal(0);
+
+    expect(await tricastTrio.callStatic.getForBalance(wallet0.address)).to.equal(10);
+    expect(await tricastTrio.callStatic.getAgainstBalance(wallet1.address)).to.equal(10);
+
+    expect(balance0 - await tricastTrio.callStatic.getBalance(wallet0.address)).to.equal(300);
+    expect(balance1 - await tricastTrio.callStatic.getBalance(wallet1.address)).to.equal(700);
   });
 
 });

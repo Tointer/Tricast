@@ -59,9 +59,6 @@ contract TricastTrio is ITrio{
         while(againstBook.getOrderCountForPrice(againstPrice) > 0){
             Order memory order = againstBook.drain(againstPrice, pivotOrder.amount);
             
-            balance.removeBalance(order.author, order.amount*againstPrice);
-            balance.removeBalance(pivotOrder.author, order.amount*forPrice);
-
             againstBook.mint(order.author, order.amount);
             forBook.mint(pivotOrder.author, order.amount);
 
@@ -82,9 +79,6 @@ contract TricastTrio is ITrio{
 
         while(forBook.getOrderCountForPrice(forPrice) > 0){
             Order memory order = forBook.drain(forPrice, pivotOrder.amount);
-            
-            balance.removeBalance(order.author, order.amount*againstPrice);
-            balance.removeBalance(pivotOrder.author, order.amount*forPrice);
 
             forBook.mint(order.author, order.amount);
             againstBook.mint(pivotOrder.author, order.amount);
