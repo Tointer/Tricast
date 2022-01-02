@@ -61,6 +61,75 @@ describe("TricastTrio", function () {
 
   });
 
+  it("Market buy exact amount", async () => {
+    const balance2 = await tricastTrio.callStatic.getBalance(wallet2.address);
+
+    await tricastTrio.connect(wallet2).forSellLimit(5, 30);
+    await tricastTrio.connect(wallet1).forBuyMarket(150);
+
+    expect(await tricastTrio.callStatic.getForBalance(wallet1.address)).to.equal(5);
+    expect(await tricastTrio.callStatic.getBalance(wallet2.address) - balance2).to.equal(150);
+  });
+
+  it("Market buy many orders", async () => {
+    const balance2 = await tricastTrio.callStatic.getBalance(wallet2.address);
+
+    await tricastTrio.connect(wallet2).forSellLimit(1, 30);
+    await tricastTrio.connect(wallet2).forSellLimit(1, 30);
+    await tricastTrio.connect(wallet2).forSellLimit(1, 30);
+    await tricastTrio.connect(wallet2).forSellLimit(1, 30);
+    await tricastTrio.connect(wallet2).forSellLimit(1, 30);
+    await tricastTrio.connect(wallet1).forBuyMarket(150);
+
+    expect(await tricastTrio.callStatic.getForBalance(wallet1.address)).to.equal(5);
+    expect(await tricastTrio.callStatic.getBalance(wallet2.address) - balance2).to.equal(150);
+  });
+
+  it("Market buy into big limit", async () => {
+    const balance2 = await tricastTrio.callStatic.getBalance(wallet2.address);
+
+    await tricastTrio.connect(wallet2).forSellLimit(10, 30);
+    await tricastTrio.connect(wallet1).forBuyMarket(150);
+
+    expect(await tricastTrio.callStatic.getForBalance(wallet1.address)).to.equal(5);
+    expect(await tricastTrio.callStatic.getBalance(wallet2.address) - balance2).to.equal(150);
+  });
+
+  it("Market sell exact amount", async () => {
+    const balance2 = await tricastTrio.callStatic.getBalance(wallet2.address);
+
+    await tricastTrio.connect(wallet1).forBuyLimit(5, 30);
+    await tricastTrio.connect(wallet2).forSellMarket(5);
+
+    expect(await tricastTrio.callStatic.getForBalance(wallet1.address)).to.equal(5);
+    expect(await tricastTrio.callStatic.getBalance(wallet2.address) - balance2).to.equal(150);
+  });
+
+  it("Market sell many orders", async () => {
+    const balance2 = await tricastTrio.callStatic.getBalance(wallet2.address);
+
+    await tricastTrio.connect(wallet1).forBuyLimit(1, 30);
+    await tricastTrio.connect(wallet1).forBuyLimit(1, 30);
+    await tricastTrio.connect(wallet1).forBuyLimit(1, 30);
+    await tricastTrio.connect(wallet1).forBuyLimit(1, 30);
+    await tricastTrio.connect(wallet1).forBuyLimit(1, 30);
+
+    await tricastTrio.connect(wallet2).forSellMarket(5);
+
+    expect(await tricastTrio.callStatic.getForBalance(wallet1.address)).to.equal(5);
+    expect(await tricastTrio.callStatic.getBalance(wallet2.address) - balance2).to.equal(150);
+  });
+
+  it("Market sell into big limit", async () => {
+    const balance2 = await tricastTrio.callStatic.getBalance(wallet2.address);
+
+    await tricastTrio.connect(wallet1).forBuyLimit(5, 30);
+    await tricastTrio.connect(wallet2).forSellMarket(2);
+
+    expect(await tricastTrio.callStatic.getForBalance(wallet1.address)).to.equal(2);
+    expect(await tricastTrio.callStatic.getBalance(wallet2.address) - balance2).to.equal(60);
+  });
+
   it("Mint two matching for/against limit orders at middle price", async () => {
     await tricastTrio.connect(wallet0).forBuyLimit(10, 50);
     await tricastTrio.connect(wallet1).againstBuyLimit(10, 50);

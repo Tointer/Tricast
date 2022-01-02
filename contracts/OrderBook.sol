@@ -50,7 +50,7 @@ library OrderBookFuns{
 
     function limitBuySynth(OrderBook storage self, uint8 priceForEach, uint amount) internal {
         require(priceForEach > 0 && priceForEach < 100, "invalid price");
-        
+
         self.balance.removeBalance(msg.sender, amount*priceForEach);
 
         self.orders[priceForEach].enqueue(Order(msg.sender, amount));
@@ -76,14 +76,12 @@ library OrderBookFuns{
             Queue storage queue = self.orders[i];
 
             while(queue.getCount() > 0){
-                Order memory drainedOrder = queue.drainOrderQueue(amount*i - amountGathered);
-
+                Order memory drainedOrder = queue.drainOrderQueue(amount/i - amountGathered/i);
                 amountGathered += drainedOrder.amount*i;
                 self.balance.removeBalance(msg.sender, drainedOrder.amount*i);
                 self.balance.addBalance(drainedOrder.author, drainedOrder.amount*i);
 
                 self.synthBalances[msg.sender] += drainedOrder.amount;
-                self.synthBalances[drainedOrder.author] -= drainedOrder.amount;
 
                 if(amountGathered == amount){
                     return;
@@ -110,7 +108,6 @@ library OrderBookFuns{
                 amountGathered += drainedOrder.amount;
                 
                 self.balance.addBalance(msg.sender, drainedOrder.amount*i);
-                self.balance.removeBalance(drainedOrder.author, drainedOrder.amount*i);
 
                 self.synthBalances[msg.sender] -= drainedOrder.amount;
                 self.synthBalances[drainedOrder.author] += drainedOrder.amount;
