@@ -5,6 +5,7 @@ struct Queue {
     mapping(uint256 => Order) queue;
     uint256 first;
     uint256 last;
+    uint256 volume;
 }
 
 library QueueFuns {
@@ -12,25 +13,29 @@ library QueueFuns {
         self.first = 1;
     }
     
-    function enqueue(Queue storage self, Order memory order) public {
+    function enqueue(Queue storage self, Order memory order) internal {
         self.last += 1;
         self.queue[self.last] = order;
+
+        self.volume += order.amount;
     }
 
-    function dequeue(Queue storage self) public returns (Order memory data) {
+    function dequeue(Queue storage self) internal returns (Order memory data) {
         data = peek(self);
 
         delete self.queue[self.first];
         self.first += 1;
+
+        self.volume -= data.amount;
     }
 
-    function peek(Queue storage self) public view returns (Order memory data){
+    function peek(Queue storage self) internal view returns (Order memory data){
         require(self.last >= self.first, "queue is empty");  
         data = self.queue[self.first];
     }
 
     function drainOrderQueue(Queue storage self, uint amount) 
-    public returns(Order memory drainedOrder){
+    internal returns(Order memory drainedOrder){
 
         Order memory nextOrder = peek(self);
 
@@ -40,10 +45,11 @@ library QueueFuns {
         else{
             drainedOrder = Order(nextOrder.author, amount);
             nextOrder.amount -= amount;
+            self.volume -= amount;
         }
     }
 
-    function getCount(Queue storage self) public view returns(uint count){
+    function getCount(Queue storage self) internal view returns(uint count){
         return self.last - self.first;
     }
 }

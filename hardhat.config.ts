@@ -35,6 +35,8 @@ const config: HardhatUserConfig = {
   gasReporter: {
     enabled: process.env.REPORT_GAS !== undefined,
     coinmarketcap: process.env.CMCAP_KEY,
+    gasPrice: 30,
+    token: "AVAX",
     currency: "USD",
   },
   etherscan: {
