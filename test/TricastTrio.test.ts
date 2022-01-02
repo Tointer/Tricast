@@ -22,6 +22,10 @@ describe("TricastTrio", function () {
     const wallets = await ethers.getSigners();
     wallet0 = wallets[0];
     wallet1 = wallets[1];
+
+    (await wallet0.sendTransaction({to: tricastTrio.address, value: 5000})).wait();
+    (await wallet1.sendTransaction({to: tricastTrio.address, value: 5000})).wait();
+
   });
 
   it("Transfer funds", async () => {
@@ -29,13 +33,23 @@ describe("TricastTrio", function () {
     transaction.wait();
 
     const balance = await tricastTrio.callStatic.getBalance(wallet0.address);
-    expect(balance).to.equal(50000);
+    expect(balance).to.equal(55000);
+  });
+
+  it("Place limit buy order", async () => {
+    await tricastTrio.connect(wallet0).forBuyLimit(20, 30);
+    const forOrderCount = await tricastTrio.callStatic.getForOrderCount(30);
+
+    expect(forOrderCount).to.equal(1);
+
+
+    await tricastTrio.connect(wallet1).againstBuyLimit(20, 30);
+    const againstOrderCount = await tricastTrio.callStatic.getAgainstOrderCount(30);
+
+    expect(againstOrderCount).to.equal(1);
   });
 
   it("Mint two matching for/against limit orders at middle price", async () => {
-    (await wallet0.sendTransaction({to: tricastTrio.address, value: 500})).wait();
-    (await wallet1.sendTransaction({to: tricastTrio.address, value: 500})).wait();
-
     await tricastTrio.connect(wallet0).forBuyLimit(10, 50);
     await tricastTrio.connect(wallet1).againstBuyLimit(10, 50);
 

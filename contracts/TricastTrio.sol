@@ -37,18 +37,39 @@ contract TricastTrio is ITrio{
     function getForBalance(address adr) external view returns(uint amount){
         amount = forBook.synthBalances[adr];
     }
+    function getForOrderCount(uint8 price) external view returns(uint count){
+        count = forBook.getOrderCountForPrice(price);
+    }
+    function getAgainstOrderCount(uint8 price) external view returns(uint count){
+        count = againstBook.getOrderCountForPrice(price);
+    }
+    function getForPriceVolume(uint8 price) external view returns(uint volume){
+        volume = forBook.getPriceVolume(price);
+    }
+    function getAgainstPriceVolume(uint8 price) external view returns(uint volume){
+        volume = againstBook.getPriceVolume(price);
+    }
 
     function mintPivotingFor(uint8 forPrice, uint8 againstPrice) private {
 
         Order memory pivotOrder = forBook.dequeueOrder(forPrice);
+        uint gatheredAmount;
+
+
         while(againstBook.getOrderCountForPrice(againstPrice) > 0){
             Order memory order = againstBook.drain(againstPrice, pivotOrder.amount);
             
             balance.removeBalance(order.author, order.amount*againstPrice);
-            balance.removeBalance(msg.sender, order.amount*forPrice);
+            balance.removeBalance(pivotOrder.author, order.amount*forPrice);
 
             againstBook.mint(order.author, order.amount);
-            forBook.mint(msg.sender, order.amount);
+            forBook.mint(pivotOrder.author, order.amount);
+
+            gatheredAmount += order.amount;
+
+            if(gatheredAmount == pivotOrder.amount){
+                return;
+            }
         }
 
         revert("This shouldn't be possible");
@@ -57,14 +78,22 @@ contract TricastTrio is ITrio{
     function mintPivotingAgainst(uint8 forPrice, uint8 againstPrice) private {
 
         Order memory pivotOrder = againstBook.dequeueOrder(againstPrice);
+        uint gatheredAmount;
+
         while(forBook.getOrderCountForPrice(forPrice) > 0){
             Order memory order = forBook.drain(forPrice, pivotOrder.amount);
             
             balance.removeBalance(order.author, order.amount*againstPrice);
-            balance.removeBalance(msg.sender, order.amount*forPrice);
+            balance.removeBalance(pivotOrder.author, order.amount*forPrice);
 
             forBook.mint(order.author, order.amount);
-            againstBook.mint(msg.sender, order.amount);
+            againstBook.mint(pivotOrder.author, order.amount);
+
+            gatheredAmount += order.amount;
+
+            if(gatheredAmount == pivotOrder.amount){
+                return;
+            }
         }
 
         revert("This shouldn't be possible");
@@ -81,9 +110,9 @@ contract TricastTrio is ITrio{
 
     function forBuyLimit(uint synthAmount, uint8 priceForEach) override external {
         forBook.limitBuySynth(priceForEach, synthAmount);
+        uint8 mirrorPrice = getMirrorPrice(priceForEach);
 
-        if(againstBook.getPriceVolume(priceForEach) != 0 && forBook.getPriceVolume(priceForEach) != 0){
-            uint8 mirrorPrice = getMirrorPrice(priceForEach);
+        if(againstBook.getPriceVolume(mirrorPrice) != 0 && forBook.getPriceVolume(priceForEach) != 0){
             if(synthAmount < againstBook.getLastOrderAmount(mirrorPrice)){
                 mintPivotingAgainst(priceForEach, mirrorPrice);
             }
@@ -107,9 +136,9 @@ contract TricastTrio is ITrio{
 
     function againstBuyLimit(uint synthAmount, uint8 priceForEach) override external {
         againstBook.limitBuySynth(priceForEach, synthAmount);
+        uint8 mirrorPrice = getMirrorPrice(priceForEach);
         
-        if(againstBook.getPriceVolume(priceForEach) != 0 && forBook.getPriceVolume(priceForEach) != 0){
-            uint8 mirrorPrice = getMirrorPrice(priceForEach);
+        if(againstBook.getPriceVolume(priceForEach) != 0 && forBook.getPriceVolume(mirrorPrice) != 0){
             if(synthAmount > forBook.getLastOrderAmount(mirrorPrice)){
                 mintPivotingAgainst(mirrorPrice, priceForEach);
             }

@@ -4,6 +4,8 @@ pragma solidity ^0.8.0;
 import "./OrderQueue.sol";
 import "./Balance.sol";
 
+import "hardhat/console.sol";
+
 struct OrderBook{
     Queue[100] orders;
 
@@ -43,16 +45,16 @@ library OrderBookFuns{
     }
 
     function mint(OrderBook storage self, address adr, uint amount) internal{
+        console.log("Minting %s synth tokens for %s", amount, adr);
         self.synthBalances[adr] += amount;
     }
 
     function limitBuySynth(OrderBook storage self, uint8 priceForEach, uint amount) internal {
         require(priceForEach > 0 && priceForEach < 100, "invalid price");
         //who is sender?
-        self.balance.removeBalance(msg.sender, amount);
-        Queue storage queue = getOrderQueue(self, priceForEach);
+        self.balance.removeBalance(msg.sender, amount*priceForEach);
 
-        queue.enqueue(Order(msg.sender, amount/priceForEach));
+        self.orders[priceForEach].enqueue(Order(msg.sender, amount));
         self.bestSellPrice = max(priceForEach, self.bestSellPrice);
     }
 
@@ -61,9 +63,8 @@ library OrderBookFuns{
         require(self.synthBalances[msg.sender] >= amount, "not enough funds");
 
         self.synthBalances[msg.sender] -= amount;
-        Queue storage queue = getOrderQueue(self, priceForEach);
 
-        queue.enqueue(Order(msg.sender, amount));
+        self.orders[priceForEach].enqueue(Order(msg.sender, amount));
         self.bestBuyPrice = min(priceForEach, self.bestBuyPrice);
     }
 
@@ -73,7 +74,7 @@ library OrderBookFuns{
         uint amountGathered = 0;
 
         for(uint8 i = self.bestBuyPrice; i < 100; i++){
-            Queue storage queue = getOrderQueue(self, i);
+            Queue storage queue = self.orders[i];
 
             while(queue.getCount() > 0){
                 Order memory drainedOrder = queue.drainOrderQueue(amount*i - amountGathered);
@@ -102,7 +103,7 @@ library OrderBookFuns{
         uint amountGathered = 0;
 
         for(uint8 i = self.bestSellPrice; i > 0; i--){
-            Queue storage queue = getOrderQueue(self, i);
+            Queue storage queue = self.orders[i];
 
             while(queue.getCount() > 0){
                 Order memory drainedOrder = queue.drainOrderQueue(amount - amountGathered);
@@ -124,13 +125,6 @@ library OrderBookFuns{
         }
 
         revert("not enough liqudity");
-    }
-
-    function getOrderQueue(OrderBook storage self, uint8 priceForEach) internal returns (Queue storage data){
-        if(self.orders[priceForEach].first == 0){
-            self.orders[priceForEach].create();
-        }
-        data = self.orders[priceForEach];
     }
 
     function max(uint8 a, uint8 b) internal pure returns (uint8) {

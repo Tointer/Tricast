@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.0;  
+import "hardhat/console.sol";
 
 struct Queue {
     mapping(uint256 => Order) queue;
@@ -9,14 +10,10 @@ struct Queue {
 }
 
 library QueueFuns {
-    function create(Queue storage self) internal {
-        self.first = 1;
-    }
-    
     function enqueue(Queue storage self, Order memory order) internal {
-        self.last += 1;
         self.queue[self.last] = order;
 
+        self.last += 1;
         self.volume += order.amount;
     }
 
@@ -30,7 +27,7 @@ library QueueFuns {
     }
 
     function peek(Queue storage self) internal view returns (Order memory data){
-        require(self.last >= self.first, "queue is empty");  
+        require(self.last > self.first, "queue is empty");  
         data = self.queue[self.first];
     }
 
