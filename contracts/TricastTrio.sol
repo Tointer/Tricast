@@ -18,17 +18,19 @@ contract TricastTrio is ITrio{
 
     Balance public balance;
 
+    IEventOutcomeProvider.EventOutcome public currentState;
+
     IEventOutcomeProvider public outcomeProvider;
 
-    constructor(IEventOutcomeProvider provider) {
-      outcomeProvider = provider;   
-      balance = new Balance();
-
-      againstBook.create(balance);
-      forBook.create(balance);
+    constructor(IEventOutcomeProvider provider, Balance denominatorBalance) {
+        require(address(denominatorBalance) != address(0));
+        outcomeProvider = provider;   
+        balance = denominatorBalance;
+        againstBook.create(balance);
+        forBook.create(balance);
     }
 
-    function getBalance(address adr) external view returns(uint amount){
+    function getDenominatorBalance(address adr) external view returns(uint amount){
         amount = balance.getBalance(adr);
     }
     function getAgainstBalance(address adr) external view returns(uint amount){
@@ -98,11 +100,11 @@ contract TricastTrio is ITrio{
         mirrorPrice = 100 - price;
     }
     
-    function forBuyMarket(uint denominatorAmount) override external {
+    function forBuyMarket(uint denominatorAmount) override external onlyBeforeResolve{
         forBook.marketBuySynth(denominatorAmount);
     }
 
-    function forBuyLimit(uint synthAmount, uint8 priceForEach) override external {
+    function forBuyLimit(uint synthAmount, uint8 priceForEach) override external onlyBeforeResolve{
         forBook.limitBuySynth(priceForEach, synthAmount);
         uint8 mirrorPrice = getMirrorPrice(priceForEach);
 
@@ -116,19 +118,19 @@ contract TricastTrio is ITrio{
         }
     }
 
-    function forSellMarket(uint synthAmount) override external {
+    function forSellMarket(uint synthAmount) override external onlyBeforeResolve{
         forBook.marketSellSynth(synthAmount);
     }
 
-    function forSellLimit(uint synthAmount, uint8 priceForEach) override external {
+    function forSellLimit(uint synthAmount, uint8 priceForEach) override external onlyBeforeResolve{
         forBook.limitSellSynth(priceForEach, synthAmount);
     }
 
-    function againstBuyMarket(uint denominatorAmount) override external {
+    function againstBuyMarket(uint denominatorAmount) override external onlyBeforeResolve{
         againstBook.marketBuySynth(denominatorAmount);
     }
 
-    function againstBuyLimit(uint synthAmount, uint8 priceForEach) override external {
+    function againstBuyLimit(uint synthAmount, uint8 priceForEach) override external onlyBeforeResolve{
         againstBook.limitBuySynth(priceForEach, synthAmount);
         uint8 mirrorPrice = getMirrorPrice(priceForEach);
         
@@ -142,12 +144,29 @@ contract TricastTrio is ITrio{
         }
     }
 
-    function againstSellMarket(uint synthAmount) override external {
+    function againstSellMarket(uint synthAmount) override external onlyBeforeResolve{
         againstBook.marketSellSynth(synthAmount);
     }
 
-    function againstSellLimit(uint synthAmount, uint8 priceForEach) override external {
+    function againstSellLimit(uint synthAmount, uint8 priceForEach) override external onlyBeforeResolve{
         againstBook.limitSellSynth(priceForEach, synthAmount);
+    }
+
+    function tryResolve() override external onlyBeforeResolve{
+        IEventOutcomeProvider.EventOutcome outcome = outcomeProvider.getEventOutcome();
+        require(outcome != IEventOutcomeProvider.EventOutcome.NOT_HAPPENED, "Can't resolve now");
+        if(outcome == IEventOutcomeProvider.EventOutcome.RESOLVED_TRUE){
+            currentState = outcome;
+        }
+        else{
+            currentState = outcome;
+        }
+
+    }
+
+    modifier onlyBeforeResolve(){
+        require(currentState == IEventOutcomeProvider.EventOutcome.NOT_HAPPENED, "TRICAST_TRIO: CAN'T DO IT AFTER RESOLVE");
+        _;
     }
 
     receive() external payable {

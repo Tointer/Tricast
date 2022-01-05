@@ -17,4 +17,7 @@ interface ITrio{
     function againstSellMarket(uint synthAmount) external;
 
     function againstSellLimit(uint synthAmount, uint8 priceForEach) external;
+
+
+    function tryResolve() external;
 }
