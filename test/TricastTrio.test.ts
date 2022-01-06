@@ -1,4 +1,4 @@
-import { expect } from "chai";
+import { expect, use } from "chai";
 import { Contract, Wallet } from "ethers";
 import { ethers } from "hardhat";
 import { deployContract, MockProvider, solidity } from 'ethereum-waffle';
@@ -7,6 +7,7 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { TricastTrio } from "../typechain";
 
 describe("TricastTrio", function () {
+  use(solidity);
 
   let oracle: Contract;
   let tricastTrio: Contract;
@@ -165,6 +166,44 @@ describe("TricastTrio", function () {
 
     expect(balance0 - await tricastTrio.callStatic.getDenominatorBalance(wallet0.address)).to.equal(300);
     expect(balance1 - await tricastTrio.callStatic.getDenominatorBalance(wallet1.address)).to.equal(700);
+  });
+
+  it("Claim FOR tokens after resolve", async () => {
+    const balance2 = await tricastTrio.callStatic.getDenominatorBalance(wallet2.address);
+    const forBalance = await tricastTrio.callStatic.getForBalance(wallet2.address);
+    const againstBalance = await tricastTrio.callStatic.getAgainstBalance(wallet2.address);
+
+    console.log("start");
+    //expect(await tricastTrio.connect(wallet2).claimWinnings()).to.be.reverted;
+
+    await oracle.connect(wallet2).setEventOutcome(1); 
+    await tricastTrio.connect(wallet2).tryResolve(); //resolve true
+    console.log("Resolved");
+
+    expect(await tricastTrio.connect(wallet2).claimWinnings());
+
+    expect(await tricastTrio.callStatic.getDenominatorBalance(wallet2.address) - balance2).to.equal(forBalance*100);
+    expect(await tricastTrio.callStatic.getForBalance(wallet2.address)).to.equal(0);
+    expect(await tricastTrio.callStatic.getAgainstBalance(wallet2.address)).to.equal(againstBalance);
+  });
+
+  it("Claim AGAINST tokens after resolve", async () => {
+    const balance3 = await tricastTrio.callStatic.getDenominatorBalance(wallet3.address);
+    const forBalance = await tricastTrio.callStatic.getForBalance(wallet3.address);
+    const againstBalance = await tricastTrio.callStatic.getAgainstBalance(wallet3.address);
+
+    console.log("start");
+    //expect(await tricastTrio.connect(wallet3).claimWinnings()).to.be.reverted;
+
+    await oracle.connect(wallet3).setEventOutcome(2); 
+    await tricastTrio.connect(wallet3).tryResolve(); //resolve false
+    console.log("Resolved");
+
+    expect(await tricastTrio.connect(wallet3).claimWinnings());
+
+    expect(await tricastTrio.callStatic.getDenominatorBalance(wallet3.address) - balance3).to.equal(againstBalance*100);
+    expect(await tricastTrio.callStatic.getAgainstBalance(wallet3.address)).to.equal(0);
+    expect(await tricastTrio.callStatic.getForBalance(wallet3.address)).to.equal(forBalance);
   });
 
 });

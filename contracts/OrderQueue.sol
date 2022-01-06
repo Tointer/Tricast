@@ -26,6 +26,15 @@ library QueueFuns {
         self.volume -= data.amount;
     }
 
+    function nullifyOrder(Queue storage self, uint index, address wallet) internal returns (uint amountDeleted){
+        require(index >= self.first && index <= self.last, "Index out of bounds");
+        require(self.queue[index].author == wallet, "You are not author of this order");
+
+        amountDeleted = self.queue[index].amount;
+        self.queue[index].amount = 0;
+        self.volume -= amountDeleted;
+    }
+
     function peek(Queue storage self) internal view returns (Order memory data){
         require(self.last > self.first, "queue is empty");  
         data = self.queue[self.first];

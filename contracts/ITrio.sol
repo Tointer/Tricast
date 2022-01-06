@@ -18,6 +18,13 @@ interface ITrio{
 
     function againstSellLimit(uint synthAmount, uint8 priceForEach) external;
 
+    
+    function removeForLimit(uint8 price, uint index) external;
+
+    function removeAgainstLimit(uint8 price, uint index) external;
+
+    function claimWinnings() external;
+
 
     function tryResolve() external;
 }

@@ -52,6 +52,7 @@ contract TricastTrio is ITrio{
         volume = againstBook.getPriceVolume(price);
     }
 
+
     function mintPivotingFor(uint8 forPrice, uint8 againstPrice) private {
 
         Order memory pivotOrder = forBook.dequeueOrder(forPrice);
@@ -152,20 +153,39 @@ contract TricastTrio is ITrio{
         againstBook.limitSellSynth(priceForEach, synthAmount);
     }
 
+    function removeForLimit(uint8 price, uint index) override external{
+        forBook.removeLimitOrder(price, index);
+    }
+    
+    function removeAgainstLimit(uint8 price, uint index) override external{
+        againstBook.removeLimitOrder(price, index);
+    }
+
+    function claimWinnings() override external onlyAfterResolve{
+        if(currentState == IEventOutcomeProvider.EventOutcome.RESOLVED_TRUE){
+            forBook.claimWinnings(100);
+        }
+        else{
+            againstBook.claimWinnings(100);
+        }
+    }
+
+
     function tryResolve() override external onlyBeforeResolve{
         IEventOutcomeProvider.EventOutcome outcome = outcomeProvider.getEventOutcome();
         require(outcome != IEventOutcomeProvider.EventOutcome.NOT_HAPPENED, "Can't resolve now");
-        if(outcome == IEventOutcomeProvider.EventOutcome.RESOLVED_TRUE){
-            currentState = outcome;
-        }
-        else{
-            currentState = outcome;
-        }
 
+        console.log("Resolved: %s", uint(outcome));
+        currentState = outcome;
     }
 
     modifier onlyBeforeResolve(){
         require(currentState == IEventOutcomeProvider.EventOutcome.NOT_HAPPENED, "TRICAST_TRIO: CAN'T DO IT AFTER RESOLVE");
+        _;
+    }
+
+    modifier onlyAfterResolve(){
+        require(currentState != IEventOutcomeProvider.EventOutcome.NOT_HAPPENED, "TRICAST_TRIO: CAN'T DO IT BEFORE RESOLVE");
         _;
     }
 

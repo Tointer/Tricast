@@ -4,6 +4,7 @@ pragma solidity ^0.8.0;
 import "./OrderQueue.sol";
 import "./Balance.sol";
 
+
 import "hardhat/console.sol";
 
 struct OrderBook{
@@ -42,6 +43,27 @@ library OrderBookFuns{
 
     function drain(OrderBook storage self, uint8 price, uint amount) internal returns(Order memory order){
         order = self.orders[price].drainOrderQueue(amount);
+    }
+
+    function removeLimitOrder(OrderBook storage self, uint8 price, uint index) internal{
+        uint amount = self.orders[price].nullifyOrder(index, msg.sender);
+
+        if(price <= self.bestSellPrice){
+            self.balance.addBalance(msg.sender, amount*price);
+        }
+        else{
+            self.synthBalances[msg.sender] += amount;
+        }
+    }
+
+    function claimWinnings(OrderBook storage self, uint8 finalPrice) internal{
+        if(finalPrice == 0){
+            return;
+        }
+        uint amount = self.synthBalances[msg.sender];
+        
+        self.synthBalances[msg.sender] = 0;
+        self.balance.addBalance(msg.sender, amount*finalPrice);
     }
 
     function mint(OrderBook storage self, address adr, uint amount) internal{
