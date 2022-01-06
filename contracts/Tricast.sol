@@ -5,6 +5,7 @@ import "./ITrio.sol";
 import "./TricastTrio.sol";
 import "./outcome_providers/IEventOutcomeProvider.sol";
 import "./Balance.sol";
+import "@openzeppelin/contracts/utils/Address.sol";
 
 contract Tricast{
     event TrioCreated(address trio);
@@ -28,6 +29,11 @@ contract Tricast{
         balance.addTrioRole(trioAddress);
         allTrios.push(trioAddress);
         emit TrioCreated(trioAddress);
+    }
+
+    function withdraw(uint amount) external{
+      balance.removeBalance(msg.sender, amount);
+      Address.sendValue(payable(msg.sender), amount);
     }
 
     receive() external payable {
