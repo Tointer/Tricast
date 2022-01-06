@@ -24,7 +24,13 @@ contract Tricast{
         TricastTrio trio = new TricastTrio(IEventOutcomeProvider(oracleAddress), balance);
 
         trioAddress = address(trio);
+
+        balance.addTrioRole(trioAddress);
         allTrios.push(trioAddress);
         emit TrioCreated(trioAddress);
+    }
+
+    receive() external payable {
+        balance.addBalance(msg.sender, msg.value);
     }
 }
