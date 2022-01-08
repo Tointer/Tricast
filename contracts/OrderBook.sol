@@ -15,10 +15,15 @@ struct OrderBook{
 
     mapping(address => uint) synthBalances;
     Balance balance;
+
+    
 }
 
 library OrderBookFuns{
     using QueueFuns for Queue;
+
+    event BestSellPriceChanged(uint8 newValue);
+    event BestBuyPriceChanged(uint8 newValue);
 
     function create(OrderBook storage self, Balance balance) internal {
         self.bestBuyPrice = 100;
@@ -76,7 +81,11 @@ library OrderBookFuns{
         self.balance.removeBalance(msg.sender, amount*priceForEach);
 
         self.orders[priceForEach].enqueue(Order(msg.sender, amount));
-        self.bestSellPrice = max(priceForEach, self.bestSellPrice);
+
+        if(self.bestSellPrice < priceForEach){
+            self.bestSellPrice = priceForEach;
+            emit BestSellPriceChanged(priceForEach);
+        }
     }
 
     function limitSellSynth(OrderBook storage self, uint8 priceForEach, uint amount) internal {
@@ -86,7 +95,11 @@ library OrderBookFuns{
         self.synthBalances[msg.sender] -= amount;
 
         self.orders[priceForEach].enqueue(Order(msg.sender, amount));
-        self.bestBuyPrice = min(priceForEach, self.bestBuyPrice);
+
+        if(self.bestBuyPrice > priceForEach){
+            self.bestBuyPrice = priceForEach;
+            emit BestBuyPriceChanged(priceForEach);
+        }
     }
 
     function marketBuySynth(OrderBook storage self, uint amount) internal {
@@ -143,13 +156,5 @@ library OrderBookFuns{
         }
 
         revert("not enough liqudity");
-    }
-
-    function max(uint8 a, uint8 b) internal pure returns (uint8) {
-        return a >= b ? a : b;
-    }
-
-    function min(uint8 a, uint8 b) internal pure returns (uint8) {
-        return a < b ? a : b;
     }
 }
