@@ -4,6 +4,7 @@
 // When running the script with `npx hardhat run <script>` you'll find the Hardhat
 // Runtime Environment's members available in the global scope.
 import { expect } from "chai";
+import { providers } from "ethers";
 import { ethers } from "hardhat";
 
 async function main() {
@@ -14,25 +15,22 @@ async function main() {
   // manually to make sure everything is compiled
   // await hre.run('compile');
 
+  const provider = ethers.getDefaultProvider();
+  const currentTime = (await provider.getBlock(provider.blockNumber)).timestamp;
+  const lifetimeSeconds = 10000;
+
   // We get the contract to deploy
-  const OrderQueue = await ethers.getContractFactory("QueueFuns");
-  const orderQueue = await OrderQueue.deploy();
+  const Oracle = await ethers.getContractFactory("TokenPriceOracle");
+  const oracle = await Oracle.deploy("0x5498BB86BC934c8D34FDA08E81D444153d0D06aD", currentTime+lifetimeSeconds, 100);
 
-  const Greeter = await ethers.getContractFactory("OrderBook", {
-    libraries: {
-      QueueFuns: orderQueue.address
-    }
-  });
-  const greeter = await Greeter.deploy();
+  const Tricast = await ethers.getContractFactory("Tricast");
+  const TricastTrio = await ethers.getContractFactory("TricastTrio");
+  const trio = await Tricast.deploy();
 
-  await greeter.deployed();
+  await trio.createTrio(oracle.address);
+  const tricastInstanceAddress = await trio.allTrios(0);
 
-  console.log("OrderBook deployed to:", greeter.address);
-
-  //await expect(greeter.limitBuySynth(0, {value: 1000})).to.be.reverted;
-  it("Can not buy for 0 price", async () => {
-    await expect(greeter.limitBuySynth(0, {value: 1000})).to.be.reverted;
-  });
+  console.log("OrderBook deployed to:", tricastInstanceAddress);
 
 }
 
