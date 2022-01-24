@@ -170,7 +170,6 @@ contract TricastTrio is ITrio{
         }
     }
 
-
     function tryResolve() override external onlyBeforeResolve{
         IEventOutcomeProvider.EventOutcome outcome = outcomeProvider.getEventOutcome();
         require(outcome != IEventOutcomeProvider.EventOutcome.NOT_HAPPENED, "Can't resolve now");
@@ -187,9 +186,5 @@ contract TricastTrio is ITrio{
     modifier onlyAfterResolve(){
         require(currentState != IEventOutcomeProvider.EventOutcome.NOT_HAPPENED, "TRICAST_TRIO: CAN'T DO IT BEFORE RESOLVE");
         _;
-    }
-
-    receive() external payable {
-        balance.addBalance(msg.sender, msg.value);
     }
 }

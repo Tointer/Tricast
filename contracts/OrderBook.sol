@@ -15,8 +15,6 @@ struct OrderBook{
 
     mapping(address => uint) synthBalances;
     Balance balance;
-
-    
 }
 
 library OrderBookFuns{

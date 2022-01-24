@@ -24,4 +24,8 @@ contract Balance is Ownable, AccessControl{
         require(hasRole(TRIO_ROLE, msg.sender), "Caller is not a trio");
         denominatorBalances[adr] -= amount;
     }
+
+    receive() external payable {
+        denominatorBalances[msg.sender] += msg.value;
+    }
 }

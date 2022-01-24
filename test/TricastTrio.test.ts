@@ -35,10 +35,11 @@ describe("TricastTrio", function () {
     wallet2 = wallets[2];
     wallet3 = wallets[3];
 
-    (await wallet0.sendTransaction({to: tricastTrio.address, value: 5000})).wait();
-    (await wallet1.sendTransaction({to: tricastTrio.address, value: 5000})).wait();
-    (await wallet2.sendTransaction({to: tricastTrio.address, value: 5000})).wait();
-    (await wallet3.sendTransaction({to: tricastTrio.address, value: 5000})).wait();
+    const balanceAddress = tricastTrio.balance();
+    (await wallet0.sendTransaction({to: balanceAddress, value: 5000})).wait();
+    (await wallet1.sendTransaction({to: balanceAddress, value: 5000})).wait();
+    (await wallet2.sendTransaction({to: balanceAddress, value: 5000})).wait();
+    (await wallet3.sendTransaction({to: balanceAddress, value: 5000})).wait();
 
     await expect(tricastTrio.connect(wallet2).forBuyLimit(10, 50)).to.be.not.reverted;
     await tricastTrio.connect(wallet3).againstBuyLimit(10, 50);
@@ -46,7 +47,8 @@ describe("TricastTrio", function () {
   });
 
   it("Transfer funds", async () => {
-    (await wallet0.sendTransaction({to: tricastTrio.address, value: 50000})).wait();
+    const balanceAddress = tricastTrio.balance();
+    (await wallet0.sendTransaction({to: balanceAddress, value: 50000})).wait();
     expect(await tricastTrio.connect(wallet3).getDenominatorBalance(wallet0.address)).to.equal(55000);
 
   });
